@@ -96,7 +96,7 @@ md"Previous calculations:"
             Input("surff_nϕ", NumberField(1:300, default=sv("surff_nϕ", 1)), "``n_\\phi``")
         ], detail=true),
         InputSection("Computational box", [
-            Input("rmax", NumberIntervalField(33.0..1000, default=sv("rmax", 60.0), step=0.5), "Radial box size", unit="Bohr"),
+            Input("rmax", NumberIntervalField(1.0..1000, default=sv("rmax", 60.0), step=0.5), "Radial box size", unit="Bohr"),
             Input("dr", NumberIntervalField(0.05..0.5, default=sv("dr", 0.2), step=0.05), "Radial step", unit="Bohr"),
             Input("ℓmax", NumberField(1:100, default=sv("ℓmax", 6)), "Maximum ``\\ell``"),
             InputSection(" Complex absorbing potential (CAP)", [
@@ -421,7 +421,7 @@ notebook_styling()
 # ╟─b8478347-69eb-47b7-8531-23716024eb4f
 # ╟─846e23f7-c430-48b2-92cd-7df3dc12aa44
 # ╟─523e76f6-dc84-4b2f-a270-1e824e75f1c8
-# ╟─dd127149-bf06-4910-933c-eb22a012243e
+# ╠═dd127149-bf06-4910-933c-eb22a012243e
 # ╟─464a422f-0083-41e6-a4fd-14a4088ab689
 # ╟─27d02d96-d85b-465b-a5a2-96ced9efae69
 # ╟─bd960418-b383-4cd9-a268-be4e1acad804
