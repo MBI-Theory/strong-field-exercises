@@ -1,0 +1,6 @@
+*~
+runs/*/run.*
+runs/*/output.detail
+runs/*/*.txt
+runs/*/*.dx
+runs/*/*.pes
