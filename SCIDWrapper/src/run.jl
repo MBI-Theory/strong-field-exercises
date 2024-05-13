@@ -171,7 +171,7 @@ function run_scan(fun::Function, Is::CartesianIndices,
         sys = fun(I)
         # By default, we avoid detail output; the user may override
         # this.
-        run_calc(sys, SCID_EXE, run_dir; detail_output=" ", kwargs...)
+        run_calc(sys, SCID_EXE; run_dir=run_dir, detail_output=" ", kwargs...)
     end
     scan_dir
 end

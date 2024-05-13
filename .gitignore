@@ -4,3 +4,9 @@ runs/*/output.detail
 runs/*/*.txt
 runs/*/*.dx
 runs/*/*.pes
+scans/**/run.*
+scans/**/output.detail
+scans/**/*.csv
+scans/**/*.txt
+scans/**/*.dx
+scans/**/*.pes
