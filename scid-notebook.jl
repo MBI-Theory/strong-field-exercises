@@ -262,20 +262,10 @@ Since we solved the TDSE for a linearly polarized field, only the
 
 # ╔═╡ 0947d3b4-2c76-4de4-a6cf-f91ae840c4ed
 let
-    ptdse = plot(SCIDWrapper.plot_dipole_moment(results), title="TDSE")
-
-    au2fs = auconvert(u"fs", 1)
-    tplot = au2fs*sfa_t
+    ptdse = SCIDWrapper.plot_dipole_moment(results, title="TDSE")
 
     Av = vector_potential(F, sfa_t)
-
-    pF = plot(tplot, Fv, label=L"F(t)")
-    pA = plot(tplot, Av, label=L"A(t)")
-    pd = plot(tplot, -sfa_d, label=L"-d(t)")
-
-    psfa = plot(pF, pA, pd, xlabel=L"$t$ [fs]",
-                layout=@layout([a;b;c]),
-                title="SFA")
+    psfa = SCIDWrapper.plot_dipole_moment(sfa_t, Fv, Av, -sfa_d, title="SFA")
 
     plot(ptdse, psfa, size=(900,800))
 end
@@ -298,36 +288,18 @@ end
 
 # ╔═╡ 98dce21a-7df0-4059-857c-2777c6e145e0
 let
-    ptdse = plot(SCIDWrapper.plot_dipole_spectrum(results, ωkind=energy_kind, ωunit=freq_unit,
-                                                  window=apodizing_window), title="TDSE")
+    kw = (;ωkind=energy_kind, ωunit=freq_unit, window=apodizing_window)
+    ptdse = SCIDWrapper.plot_dipole_spectrum(results; kw..., title="TDSE")
 
     xl = xlims(ptdse)
 
     ω₀ = austrip(photon_energy(F))
+    δt = step(sfa_t)
 
-    ω = 2π*rfftfreq(length(sfa_t), 1/step(sfa_t))
-    w = apodizing_window(length(sfa_t))
-    Fs = rfft(w .* Fv)
-    Ds = rfft(w .* sfa_d)
-
-    Z = -ω.^2 .* Ds
-
-    nan_map(v) = v ≤ 0 ? NaN : v
-
-    ωf,ωlabel,ωax = SCIDWrapper.ωaxis(energy_kind, freq_unit, austrip(sfa_Iₚ), ω₀, austrip(sfa_Uₚ))
-
-    # pF = plot(ωf(ω), abs.(Fs), label=L"|\hat{F}|(\omega)")
-    pd = plot(ωf(ω), nan_map.(abs.(Z)), label=L"|-\omega^2\hat{d}(\omega)|")
-
-    psfa = plot(pd, # xlabel=ωlabel,
-                xaxis=ωax, yaxis=:log10,
-                ylabel="Dipole spectrum [arb.u.]",
-                title="SFA", xlims=xl)
-
-    Iₚ = ωf(austrip(sfa_Iₚ))
-    vline!(psfa, ([Iₚ]), label="Ionization threshold $(SCIDWrapper.round_quantity(Iₚ))")
-    cutoff = ωf(austrip(sfa_hhg_cutoff))
-    vline!(psfa, ([cutoff]), label="HHG cut-off $(SCIDWrapper.round_quantity(cutoff))")
+    psfa = SCIDWrapper.plot_dipole_spectrum(sfa_t, δt, ω₀,
+                                            austrip(sfa_Iₚ), austrip(sfa_Uₚ), austrip(sfa_hhg_cutoff),
+                                            -sfa_d;
+                                            kw..., xlims=xl, title="SFA")
 
     plot(ptdse, psfa, size=(900,900),
          layout=@layout([a;b]))
