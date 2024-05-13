@@ -42,7 +42,7 @@ format_value(value::Tuple) = join(map(format_value, value), ", ")
 format_value(value::AbstractString) = format("'{1:s}'", value)
 format_value(value::Bool) = format(".{1:s}.", value ? "true" : "false")
 format_value(value::Integer) = format("{1:s}", value)
-format_value(value::AbstractFloat) = format("{1:.16g}", value)
+format_value(value::AbstractFloat) = format("{1:.17g}", value)
 format_value(value::Complex) = format("({1:s},{2:s})", format_value(real(value)), format_value(imag(value)))
 
 format_param(param::Symbol, value::Tuple) = [(string(param), format_value(value))]
