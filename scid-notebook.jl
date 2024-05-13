@@ -91,8 +91,8 @@ md"Previous calculations:"
             Input("coulomb_isurff", CheckBox(default=sv("coulomb_isurff", false)), "Coulomb spectrum",
                   description="Project wavefunction onto Coulomb waves after time propagation; requires the whole wavefunction to remain inside the computational box."),
             Input("surff_kmax", NumberIntervalField(0.01..10, default=sv("surff_kmax", 4.0)), "``k_{\\textrm{max}}``"),
-            Input("surff_nk", NumberField(2:1000, default=sv("surff_nk", 600)), "``n_k``"),
-            Input("surff_nθ", NumberField(1:150, default=sv("surff_nθ", 201)), "``n_\\theta``"),
+            Input("surff_nk", NumberField(2:1000, default=sv("surff_nk", 300)), "``n_k``"),
+            Input("surff_nθ", NumberField(1:150, default=sv("surff_nθ", 50)), "``n_\\theta``"),
             Input("surff_nϕ", NumberField(1:300, default=sv("surff_nϕ", 1)), "``n_\\phi``")
         ], detail=true),
         InputSection("Computational box", [
