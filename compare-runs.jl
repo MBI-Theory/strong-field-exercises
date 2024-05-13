@@ -53,7 +53,7 @@ function get_field(inputs)
     I₀ = inputs["I₀"]*u"TW/cm^2"
     λ = inputs["λ"]*u"nm"
     ω = inputs["ω"]
-    F = if inputs["λorω"] == :λ
+    F = if inputs["λorω"] == "λ"
         @field(F) do
             I₀ = I₀
             λ = λ
