@@ -18,7 +18,8 @@ export cached_calculation, notebook_styling,
     NumberIntervalField,
     Input, InputSection, format_input,
     run_dir_input, overwrite_input,
-    presets_input, load_inputs, saved_inputs, save_inputs
+    presets_input, select_previous_runs,
+    load_inputs, saved_inputs, save_inputs
 
 function cached_calculation(fun::Function, ::Type{T}, filename::AbstractString; overwrite::Bool=false) where  T
     if isfile(filename) && !overwrite
@@ -210,13 +211,21 @@ function overwrite_input()
     end
 end
 
-function presets_input(;runs_dir="runs")
+function list_previous_runs(;runs_dir="runs", extra_files=String[])
     dirs = filter(readdir(runs_dir)) do d
         dd = joinpath(runs_dir, d)
-        isdir(dd) && isfile(joinpath(dd, "inputs.json"))
+        isdir(dd) || return false
+        for f in vcat("inputs.json", extra_files)
+            isfile(joinpath(dd, f)) || return false
+        end
+        true
     end
-    Select(map(Base.Fix1(joinpath, runs_dir), dirs))
+    map(Base.Fix1(joinpath, runs_dir), dirs)
 end
+
+presets_input(;kwargs...) = Select(list_previous_runs(;kwargs...))
+
+select_previous_runs(;kwargs...) = MultiSelect(list_previous_runs(;kwargs...))
 
 function load_inputs(run_dir; verbosity=1)
     input_file = joinpath(run_dir, "inputs.json")
