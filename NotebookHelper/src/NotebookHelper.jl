@@ -265,7 +265,8 @@ function save_inputs(inputs, run_dir::AbstractString)
     end
     @info "Saving inputs to $(input_file)"
     open(input_file, "w") do file
-        write(file, JSON.json(inputs))
+        io = JSON.Writer.PrettyContext(file, 4)
+        JSON.print(io, inputs)
     end
     input_file
 end
