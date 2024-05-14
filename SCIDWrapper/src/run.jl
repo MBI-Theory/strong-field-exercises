@@ -39,7 +39,7 @@ function run_calc(sys::System, SCID_EXE::AbstractString;
     au2fs = auconvert(u"fs", 1)
     # ElectricFields.jl centres the pulse around zero, so we need to
     # subtract the origin in the plots below.
-    t₀ = input_params.vp_param[1][2][3]
+    t₀ = input_params.vp_shape == "z Flat-Sin2" ? 0.0 : input_params.vp_param[1][2][3]
 
     if debug_plots
         F = sys.F

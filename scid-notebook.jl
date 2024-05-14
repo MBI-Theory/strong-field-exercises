@@ -62,7 +62,9 @@ md"Previous calculations:"
             Input("λorω", Select([:λ => "λ", :ω => "ħω"], default=Symbol(sv("λorω", :λ))), "Carrier"),
             Input("λ", NumberIntervalField(1.0..1000, default=sv("λ", 800.0)), "Wavelength", unit="nm"),
             Input("ω", NumberIntervalField(0.01..10, default=sv("ω", 1.0)), "``\\hbar\\omega``", unit="Ha"),
-            Input("cycles", NumberIntervalField(1.0..30, default=sv("cycles", 3.0)), "Duration", unit="cycles")
+            Input("cycles", NumberIntervalField(1.0..30, default=sv("cycles", 3.0)), "Duration", unit="cycles"),
+            Input("envelope", Select([:gaussian => "Gaussian", :tophat => "Top-hat pulse with sin² ramps"],
+                                     default=Symbol(sv("envelope", :gaussian))), "Pulse envelope")
         ]),
         InputSection("Atom", [
             Input("potential", Select([:coulomb => "Coulomb, V(r)=-Z/r", :yukawa => "Yukawa, V(r)=-Z exp(-Ar)"], default=Symbol(sv("potential", :coulomb))), "Potential"),
@@ -123,31 +125,11 @@ end
 # ╔═╡ 44649b9f-6629-41ad-a4d1-3ab93703c0c9
 inputs
 
+# ╔═╡ c2d9a90f-ec0d-49af-9f3f-f34b6ec53033
+F = get_electric_field(inputs)
+
 # ╔═╡ 4f5b0481-a592-469e-9ab0-1664703aca03
-begin
-    I₀ = inputs.I₀*u"TW/cm^2"
-    λ = inputs.λ*u"nm"
-    ω = inputs.ω
-    F = if inputs.λorω == :λ
-        @field(F) do
-            I₀ = I₀
-            λ = λ
-            τ = inputs.cycles*u"fs"(inputs.λ*u"nm"/u"c")
-            σoff = 3.0
-            σmax = 4.0
-            env = :trunc_gauss
-        end
-    else
-        @field(F) do
-            I₀ = I₀
-            ω = ω
-            τ = inputs.cycles*(2π/inputs.ω)
-            σoff = 3.0
-            σmax = 4.0
-            env = :trunc_gauss
-        end
-    end
-end
+
 
 # ╔═╡ b8478347-69eb-47b7-8531-23716024eb4f
 potential = let Z = inputs.charge
@@ -175,7 +157,7 @@ run_dir = SCIDWrapper.run_calc(SCIDWrapper.System(F, inputs.δt, potential),
                                inputs...)
 
 # ╔═╡ dd127149-bf06-4910-933c-eb22a012243e
-save_inputs(inputs, run_dir);
+save_inputs(inputs, run_dir, overwrite=inputs.overwrite);
 
 # ╔═╡ 464a422f-0083-41e6-a4fd-14a4088ab689
 results = isnothing(run_dir) ? nothing : SCIDWrapper.load_calculation(run_dir);
@@ -417,11 +399,12 @@ notebook_styling()
 # ╟─5a92b770-33f8-45fd-8164-09bde6eb16f0
 # ╟─cb8d72d1-bc2e-4d0c-b659-e00fed62239c
 # ╟─44649b9f-6629-41ad-a4d1-3ab93703c0c9
+# ╟─c2d9a90f-ec0d-49af-9f3f-f34b6ec53033
 # ╟─4f5b0481-a592-469e-9ab0-1664703aca03
 # ╟─b8478347-69eb-47b7-8531-23716024eb4f
 # ╟─846e23f7-c430-48b2-92cd-7df3dc12aa44
 # ╟─523e76f6-dc84-4b2f-a270-1e824e75f1c8
-# ╠═dd127149-bf06-4910-933c-eb22a012243e
+# ╟─dd127149-bf06-4910-933c-eb22a012243e
 # ╟─464a422f-0083-41e6-a4fd-14a4088ab689
 # ╟─27d02d96-d85b-465b-a5a2-96ced9efae69
 # ╟─bd960418-b383-4cd9-a268-be4e1acad804

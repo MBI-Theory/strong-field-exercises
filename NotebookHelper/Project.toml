@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [deps]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+ElectricFields = "2f84ce32-9bb1-11e8-0d9f-3dce90a4beca"
 HypertextLiteral = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
 InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 IntervalSets = "8197267c-284f-5f27-9208-e0e47529a953"
@@ -13,3 +14,5 @@ Markdown = "d6f4376e-aef5-505a-96c1-9c027394607a"
 Pluto = "c3e4b0f8-55cb-11ea-2926-15256bba5781"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+UnitfulAtomic = "a7773ee8-282e-5fa2-be4e-bd808c38a91a"

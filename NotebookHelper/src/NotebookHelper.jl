@@ -12,6 +12,10 @@ using HypertextLiteral
 using IntervalSets
 using Statistics
 
+using Unitful
+using UnitfulAtomic
+using ElectricFields
+
 using JSON
 
 export cached_calculation, notebook_styling,
@@ -19,7 +23,8 @@ export cached_calculation, notebook_styling,
     Input, InputSection, format_input,
     run_dir_input, overwrite_input,
     presets_input, select_previous_runs,
-    load_inputs, saved_inputs, save_inputs
+    load_inputs, saved_inputs, save_inputs,
+    get_electric_field
 
 function cached_calculation(fun::Function, ::Type{T}, filename::AbstractString; overwrite::Bool=false) where  T
     if isfile(filename) && !overwrite
@@ -251,14 +256,14 @@ function inputs_equal(a, b)
     true
 end
 
-function save_inputs(inputs, run_dir::AbstractString)
+function save_inputs(inputs, run_dir::AbstractString; overwrite=false)
     run_dir = abspath(run_dir)
     if !isdir(run_dir)
         @warn "Directory $(run_dir) does not exist, please create it" run_dir
         return
     end
     input_file = joinpath(run_dir, "inputs.json")
-    if isfile(input_file)
+    if isfile(input_file) && !overwrite
         inputs_equal(inputs, load_inputs(run_dir, verbosity=0)) ||
             @error "Inputs do not match those already stored in\n\n$(run_dir)\n\nplease delete run and try again, or choose another directory" inputs
         return
@@ -269,6 +274,41 @@ function save_inputs(inputs, run_dir::AbstractString)
         JSON.print(io, inputs)
     end
     input_file
+end
+
+# * Electric Fields
+
+function get_electric_field(inputs)
+    Kt = keytype(inputs)
+    getk(k) = inputs[Kt(k)]
+
+    params = Dict{Symbol,Any}()
+    params[:I₀] = getk(:I₀)*u"TW/cm^2"
+
+    τ = if Symbol(getk(:λorω)) == :λ
+        λ = getk(:λ)*u"nm"
+        params[:λ] = λ
+        getk(:cycles)*u"fs"(λ/u"c")
+    else
+        params[:ω] = getk(:ω)
+        getk(:cycles)*(2π/getk(:ω))
+    end
+
+    if Symbol(getk(:envelope)) == :gaussian
+        params[:τ] = τ
+        params[:σoff] = 3.0
+        params[:σmax] = 4.0
+        params[:env] = :trunc_gauss
+    elseif Symbol(getk(:envelope)) == :tophat
+        params[:flat] = float(getk(:cycles))
+        params[:ramp] = 1.0
+        params[:env] = :tophat
+        params[:ramp_kind] = :sin²
+    else
+        @error "Unknown envelope $(getk(:envelope))"
+    end
+
+    ElectricFields.make_field(params)
 end
 
 end # module NotebookHelper

@@ -72,21 +72,16 @@ function scid_params(F::ElectricFields.LinearField, δt;
                      auto_decrease_timestep=true, default_sampling_factor=10,
                      δtobs=1.0, verbosity=0, kwargs...)
     env = envelope(F)
-    env isa ElectricFields.TruncatedGaussianEnvelope ||
-    throw(ArgumentError("Only ElectricFields.TruncatedGaussianEnvelope supported for now"))
 
-    δt > 0 ||
-    throw(ArgumentError("Invalid time step δt = $(δt), must be larger than zero"))
+    δt > 0 || throw(ArgumentError("Invalid time step δt = $(δt), must be larger than zero"))
 
     A₀ = vector_potential(F)
     ω = photon_energy(F)
-    # ElectricFields.jl uses a sine carrier for the vector potential,
-    # SCID a cosine one.
-    ϕ = Float64(carrier(F).ϕ) - π/2
+    T = austrip(period(F))
+    ϕ = Float64(carrier(F).ϕ)
 
     s = span(F)
     a,b = s.left,s.right
-    origin = (b-a)/2
 
     fs = 1/δt
     timesteps = steps(F, fs)
@@ -97,14 +92,31 @@ function scid_params(F::ElectricFields.LinearField, δt;
         verbosity > 0 && @info "Decreased time step from $(δt) to $(δtn)" timesteps
         δt = δtn
     end
-    τ = duration(F)
 
     δtobs = max(δtobs, δt)
     detail_frequency = ceil(Int, δtobs/δt)
 
+    τ = duration(F)
+    origin = (b-a)/2
+
+    vp_shape,vp_extra = if env isa ElectricFields.TruncatedGaussianEnvelope
+        # ElectricFields.jl uses a sine carrier for the vector potential,
+        # SCID a cosine one.
+        ϕ -= π/2
+
+        "z Gaussian", (11:12 => (env.toff, env.tmax))
+    elseif env isa ElectricFields.TrapezoidalEnvelope
+        ϕ += π
+
+        @assert env.ramp_up == env.ramp_down
+        "z Flat-Sin2", (11:11 => (T*env.ramp_up,))
+    else
+        throw(ArgumentError("Only ElectricFields.TruncatedGaussianEnvelope and ElectricFields.TrapezoidalEnvelope supported for now"))
+    end
+
     (dt=δt, timesteps=timesteps,
-     vp_scale=A₀,
-     vp_param=[1:4 => (ω, ϕ, origin, τ), 11:12 => (env.toff, env.tmax)],
+     vp_shape=vp_shape, vp_scale=A₀,
+     vp_param=[1:4 => (ω, ϕ, origin, τ), vp_extra],
      detail_frequency=detail_frequency)
 end
 

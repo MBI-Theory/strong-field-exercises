@@ -49,30 +49,7 @@ end
                                              "sfa_hhg_direct.txt", "sfa_c_direct.txt"])
 
 # ╔═╡ 858cee8f-78fb-44a2-aeb5-49c02f4374aa
-function get_field(inputs)
-    I₀ = inputs["I₀"]*u"TW/cm^2"
-    λ = inputs["λ"]*u"nm"
-    ω = inputs["ω"]
-    F = if inputs["λorω"] == "λ"
-        @field(F) do
-            I₀ = I₀
-            λ = λ
-            τ = inputs["cycles"]*u"fs"(inputs["λ"]*u"nm"/u"c")
-            σoff = 3.0
-            σmax = 4.0
-            env = :trunc_gauss
-        end
-    else
-        @field(F) do
-            I₀ = I₀
-            ω = ω
-            τ = inputs["cycles"]*(2π/inputs["ω"])
-            σoff = 3.0
-            σmax = 4.0
-            env = :trunc_gauss
-        end
-    end
-end;
+
 
 # ╔═╡ b00dce58-620d-4234-b386-8cd8f673a6e7
 all_results = let
@@ -81,7 +58,7 @@ all_results = let
         results = SCIDWrapper.load_calculation(r)
         inputs = load_inputs(r)
 
-        F = get_field(inputs)
+        F = get_electric_field(inputs)
         ω₀ = austrip(photon_energy(F))
 
         sfa_t = timeaxis(F, inputs["sfa_ndt"])

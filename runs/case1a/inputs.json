@@ -5,6 +5,7 @@
     "λ": 300.0,
     "ω": 1.0,
     "cycles": 6.0,
+    "envelope": "gaussian",
     "potential": "coulomb",
     "charge": 1.0,
     "yukawa_A": 1.0,
