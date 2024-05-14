@@ -145,6 +145,35 @@ let
     plot_many_runs(ps...; column_height=1000)
 end
 
+# ╔═╡ 952d668e-9d2b-4ddc-b762-4a1a601bde0b
+begin
+    wl = @bind gabor_window_length NumberIntervalField(0.0..3, default=0.05)
+    dr = @bind gabor_dynamic_range NumberIntervalField(0.0..10, default=3)
+    md"Time–frequency analysis, window length: $(wl) cycles, dynamic range: $(dr) orders of magnitude"
+end
+
+# ╔═╡ de0abe8c-e1d0-427a-a446-9ed181e6890d
+let
+    kw = (ωkind=energy_kind, ωunit=freq_unit,
+          window_length=gabor_window_length)
+
+    ps = map(all_results) do r
+        ptdse = plot(SCIDWrapper.plot_time_frequency_analysis(r, r.F; kw..., dynamic_range=gabor_dynamic_range),
+                     title="TDSE")
+
+        yl = ylims(ptdse)
+        psfa = plot(SCIDWrapper.plot_time_frequency_analysis(r.sfa_t, r.sfa_d, r.F,
+                                                             austrip(r.sfa_Iₚ), austrip(r.sfa_Uₚ), austrip(r.sfa_hhg_cutoff);
+                                                             kw..., dynamic_range=gabor_dynamic_range+1.5),
+                    ylims=yl,
+                    title="SFA")
+
+        plot(ptdse, psfa,
+             layout=@layout([a;b]))
+    end
+    plot_many_runs(ps...; column_height=1000)
+end
+
 # ╔═╡ 5c0a2b02-1577-4145-9be0-cbaf925d2288
 md"## Population decomposition"
 
@@ -241,6 +270,8 @@ notebook_styling()
 # ╟─38b3e22a-f80a-428e-a6ec-2e83338a67f4
 # ╟─da8b8473-b13c-493f-9616-9651eaa5472f
 # ╟─cd796434-38ff-48fb-a136-2c0089aabc43
+# ╟─952d668e-9d2b-4ddc-b762-4a1a601bde0b
+# ╟─de0abe8c-e1d0-427a-a446-9ed181e6890d
 # ╟─5c0a2b02-1577-4145-9be0-cbaf925d2288
 # ╟─94297747-7dad-4631-9515-1ed3850a417c
 # ╟─417c71b5-7512-46cf-b30f-59a2d8901de2
