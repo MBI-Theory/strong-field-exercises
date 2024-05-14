@@ -162,8 +162,17 @@ md"### Eigendecomposition"
 
 # ╔═╡ cf180888-276e-4e27-ab21-8fde2d5d6372
 let
-    ps = map(SCIDWrapper.plot_eigen_decomposition, all_results)
-    plot_many_runs(ps...; column_height=500)
+    ℓmax = isempty(all_results) ? 0 : minimum(r -> r.inputs["ℓmax"], all_results, init=100)
+    ps = map(0:ℓmax) do ℓ
+        p = plot()
+        for (i,r) in enumerate(all_results)
+            SCIDWrapper.plot_eigen_decomposition!(p, r, predicate=(ℓ′,m′) -> ℓ′ == ℓ,
+                                                  # Epredicate = <=(0),
+                                                  label=runs[i])
+        end
+        plot(p, title=L"\ell=%$(ℓ)")
+    end
+    plot(ps..., size=(1000,200*(ℓmax+1)), layout=grid(ceil(Int, (ℓmax+1)/2),2))
 end
 
 # ╔═╡ a81e0544-bd74-472e-a660-5e471211a7ab

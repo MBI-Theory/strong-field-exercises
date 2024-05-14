@@ -50,8 +50,8 @@ function fill_missing(is, vs, f)
     nis,nvs
 end
 
-plot_eigen_decomposition(::Nothing) = nothing
-function plot_eigen_decomposition(results)
+function plot_eigen_decomposition!(pa, results; predicate::Union{Function,Nothing}=nothing,
+                                   Epredicate::Function=(E -> true), kwargs...)
     la = results.large_amplitudes
     isnothing(la) && return
 
@@ -62,18 +62,22 @@ function plot_eigen_decomposition(results)
     is = la.i
     ws = real(la.Wgt)
 
-    pa = plot()
+    pE = findall(Epredicate, Es)
 
     for ℓ ∈ 0:ℓmax
         for m ∈ -ℓ:ℓ
+            isnothing(predicate) || predicate(ℓ, m) || continue
             pℓ = findall(==(ℓ), ℓs)
             pm = findall(==(m), ms)
-            p = pℓ ∩ pm
+            p = pℓ ∩ pm ∩ pE
             isempty(p) && continue
             p = p[findall(>(0), ws[p])]
             x,y = fill_missing(is[p], ws[p], NaN)
-            plot!(pa, x .+ ℓ, y, label=L"$\ell = %$(ℓ)$, $m_\ell = %$(m)$",
-                  markershape=:circle)
+            plot!(pa, x .+ ℓ, y;
+                  label=L"$\ell = %$(ℓ)$, $m_\ell = %$(m)$",
+                  markershape=:circle, markersize=3.0,
+                  markerstrokewidth=0.0,
+                  kwargs...)
         end
     end
 
@@ -83,6 +87,10 @@ function plot_eigen_decomposition(results)
           yaxis=:log10, size=(900,600),
           legend=:topright)
 end
+
+plot_eigen_decomposition(::Nothing; kwargs...) = nothing
+plot_eigen_decomposition(results; kwargs...) =
+    plot_eigen_decomposition!(plot(), results; kwargs...)
 
 plot_photon_diagram(::Nothing; kwargs...) = nothing
 function plot_photon_diagram(results; draw_photons=true)
