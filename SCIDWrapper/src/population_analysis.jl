@@ -1,5 +1,5 @@
-plot_angular_decomposition(::Nothing; kwargs...) = nothing
-function plot_angular_decomposition(results; ℓmax=results.input_params.sd_lmax)
+plot_angular_decomposition!(fig, ::Nothing; kwargs...) = fig
+function plot_angular_decomposition!(fig, results; ℓmax=results.input_params.sd_lmax)
     fp = results.final_population_m_resolved
     isnothing(fp) && return
 
@@ -8,27 +8,29 @@ function plot_angular_decomposition(results; ℓmax=results.input_params.sd_lmax
     mmin,mmax = extrema(ms)
 
     pop_kinds = ["Total population", "Bound population", "Continuum population"]
-    markershapes = [:none, :circle, :cross]
+    marker = [:none, :circle, :cross]
 
-    pa = plot()
+    ax = Axis(fig[1,1],
+              title="Angular momentum-resolved population",
+              xlabel=L"\ell", ylabel="Population",
+              yscale=log10)
 
     for m ∈ mmin:mmax
         pm = findall(==(m), ms)
         isempty(pm) && continue
 
-        for (pop_kind, markershape) in zip(pop_kinds, markershapes)
+        for pop_kind in pop_kinds
             w = real(fp[!, pop_kind])
             p = pm[findall(>(0), w[pm]) ∩ findall(<=(ℓmax), ℓs[pm])]
-            plot!(pa, ℓs[p], w[p], label=L"%$(pop_kind), $m_\ell = %$(m)$",
-                  markershape=markershape, linestyle=:auto)
+            scatterlines!(ax, ℓs[p], w[p], label=L"%$(pop_kind), $m_\ell = %$(m)$")
         end
     end
+    axislegend(ax)
 
-    plot!(pa,
-          title="Angular momentum-resolved population",
-          xlabel=L"\ell", ylabel="Population",
-          yaxis=:log10, size=(700,600))
+    fig
 end
+plot_angular_decomposition(args...; kwargs...) =
+    plot_angular_decomposition!(Figure(size=(700,600)), args...; kwargs...)
 
 function fill_missing(is, vs, f)
     nis = Vector{eltype(is)}()
@@ -50,7 +52,7 @@ function fill_missing(is, vs, f)
     nis,nvs
 end
 
-function plot_eigen_decomposition!(pa, results; predicate::Union{Function,Nothing}=nothing,
+function plot_eigen_decomposition!(fig, results; predicate::Union{Function,Nothing}=nothing,
                                    Epredicate::Function=(E -> true), kwargs...)
     la = results.large_amplitudes
     isnothing(la) && return
@@ -64,6 +66,11 @@ function plot_eigen_decomposition!(pa, results; predicate::Union{Function,Nothin
 
     pE = findall(Epredicate, Es)
 
+    ax = Axis(fig[1,1],
+              title="Eigenstate-resolved population",
+              xlabel=L"# + $\ell$", ylabel="Population",
+              yscale=log10)
+
     for ℓ ∈ 0:ℓmax
         for m ∈ -ℓ:ℓ
             isnothing(predicate) || predicate(ℓ, m) || continue
@@ -73,27 +80,23 @@ function plot_eigen_decomposition!(pa, results; predicate::Union{Function,Nothin
             isempty(p) && continue
             p = p[findall(>(0), ws[p])]
             x,y = fill_missing(is[p], ws[p], NaN)
-            plot!(pa, x .+ ℓ, y;
-                  label=L"$\ell = %$(ℓ)$, $m_\ell = %$(m)$",
-                  markershape=:circle, markersize=3.0,
-                  markerstrokewidth=0.0,
-                  kwargs...)
+            scatterlines!(ax, x .+ ℓ, y;
+                          label=L"$\ell = %$(ℓ)$, $m_\ell = %$(m)$",
+                          marker=:circle,
+                          kwargs...)
         end
     end
+    axislegend(ax)
 
-    plot!(pa,
-          title="Eigenstate-resolved population",
-          xlabel=L"# + $\ell$", ylabel="Population",
-          yaxis=:log10, size=(900,600),
-          legend=:topright)
+    fig
 end
 
-plot_eigen_decomposition(::Nothing; kwargs...) = nothing
-plot_eigen_decomposition(results; kwargs...) =
-    plot_eigen_decomposition!(plot(), results; kwargs...)
+plot_eigen_decomposition!(fig, ::Nothing; kwargs...) = fig
+plot_eigen_decomposition(args...; kwargs...) =
+    plot_eigen_decomposition!(Figure(size=(900,600)), args...; kwargs...)
 
-plot_photon_diagram(::Nothing; kwargs...) = nothing
-function plot_photon_diagram(results; draw_photons=true)
+plot_photon_diagram!(fig, ::Nothing; kwargs...) = fig
+function plot_photon_diagram!(fig, results; draw_photons=true)
     la = results.large_amplitudes
     isnothing(la) && return
 
@@ -106,12 +109,17 @@ function plot_photon_diagram(results; draw_photons=true)
     E₀ = real(results.E₀)
     ω₀ = results.input_params.vp_param[1][2][1]
 
-    pd = plot()
+    ax = Axis(fig[1,1], xlabel=L"\ell", ylabel=L"$E$ [Ha]")
 
     for (E,ℓ) in zip(Es, ℓs)
         E > 0 && continue
-        plot!(pd, ℓ .+ [0, 0.5], E*[1,1], linewidth=2.0, label=nothing)
+        lines!(ax, ℓ .+ [0, 0.5], E*[1,1], linewidth=2.0, label=nothing)
     end
+
+    xs = Float64[]
+    ys = Float64[]
+    us = Float64[]
+    vs = Float64[]
 
     if draw_photons
         photon_stack = Tuple{Int,Int}[]
@@ -129,16 +137,23 @@ function plot_photon_diagram(results; draw_photons=true)
                 a = [ℓ+0.25, E₀+ω₀*n]
                 b = [ℓn+0.25, E₀+ω₀*(n+1)]
                 v = η*(b-a)
-                plot!(pd, [a[1], a[1]+v[1]], [a[2], a[2]+v[2]],
-                    arrow=true,
-                    color=:black, linewidth=0.5,
-                    label=nothing)
+                push!(xs, a[1])
+                push!(ys, a[2])
+                push!(us, v[1])
+                push!(vs, v[2])
                 push!(photon_stack, (n+1,ℓn))
             end
         end
     end
 
-    hline!(pd, [0.0], color=:black, linewidth=3.0, label=nothing)
+    arrows!(ax,
+            xs, ys, us, vs,
+            color=:black, linewidth=1.0)
 
-    plot!(pd, xlabel=L"\ell", ylabel=L"$E$ [Ha]", size=(700,600))
+    hlines!(ax, [0.0], color=:black, linewidth=3.0, label=nothing)
+
+
+    fig
 end
+plot_photon_diagram(args...; kwargs...) =
+    plot_photon_diagram!(Figure(size=(700,600)), args...; kwargs...)

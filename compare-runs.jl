@@ -21,7 +21,7 @@ begin
 
     using PlutoUI
 
-    using Plots
+    using CairoMakie
     using LaTeXStrings
     using DelimitedFiles
 
@@ -89,11 +89,17 @@ all_results = let
 end;
 
 # ╔═╡ fd11ba16-8899-4259-82e7-5e5047e0fb95
-function plot_many_runs(ps...; column_width=600, column_height=500)
-    nr = length(runs)
-    isempty(ps) ? nothing : plot(ps...;
-                                 layout=grid(1, nr),
-                                 size=(column_width*nr,column_height))
+function plot_many_runs(fun::Function, v=runs; column_width=600, column_height=500,
+                        layout=(1,length(v)))
+    nr,nc = layout
+    @assert nr*nc ≥ length(v)
+    fig = Figure(size=(column_width*nc,column_height*nr))
+    ci = CartesianIndices(layout)
+    for i in eachindex(v)
+        I = ci[i]
+        fun(i, GridLayout(fig[I[1],I[2]]))
+    end
+    fig
 end;
 
 # ╔═╡ 29482791-5d88-474b-84fe-c7bbbbf08c09
@@ -101,12 +107,17 @@ md"# HHG"
 
 # ╔═╡ 0ce086f7-f380-4a49-b1f4-bfca7c0f801f
 let
-    ps = map(enumerate(all_results)) do (i,r)
-        ptdse = SCIDWrapper.plot_dipole_moment(r, title=runs[i])
-        psfa = plot(r.sfa_tplot, -r.sfa_d, title="SFA")
-        plot(ptdse[3], psfa, layout=@layout([a;b]))
+    plot_many_runs(column_height=1000) do i, fig
+        r = all_results[i]
+        gl = GridLayout(fig[1:3,1])
+        SCIDWrapper.plot_dipole_moment!(gl, r, title=runs[i])
+        ax = last(contents(gl))
+        ax.xaxis.attributes.labelvisible[] = false
+        ax.xaxis.attributes.ticklabelsvisible[] = false
+
+        ax = Axis(fig[4,1], title="SFA", xlabel=L"$t$ [fs]")
+        lines!(ax, ustrip.(r.sfa_tplot), -vec(r.sfa_d))
     end
-    plot_many_runs(ps...; column_height=1000)
 end
 
 # ╔═╡ 38b3e22a-f80a-428e-a6ec-2e83338a67f4
@@ -129,20 +140,25 @@ end
 let
     kw = (;ωkind=energy_kind, ωunit=freq_unit, window=apodizing_window)
 
-    ps = map(enumerate(all_results)) do (i,r)
-        ptdse = SCIDWrapper.plot_dipole_spectrum(r; kw..., title="TDSE")
-
-        xl = xlims(ptdse)
+    plot_many_runs(column_height=1000) do i, fig
+        r = all_results[i]
+        fig[1,1] = gl1 = GridLayout()
+        SCIDWrapper.plot_dipole_spectrum!(gl1, r; kw..., title="TDSE",
+                                          xticklabelsvisible=false, xlabelvisible=false)
+                                              ax1 = first(contents(gl1[1,1]))
+        xl = SCIDWrapper.get_limits!(ax1)[1]
 
         δt = step(r.sfa_t)
-        psfa = SCIDWrapper.plot_dipole_spectrum(r.sfa_t, δt, r.ω₀,
-                                                austrip(r.sfa_Iₚ), austrip(r.sfa_Uₚ), austrip(r.sfa_hhg_cutoff),
-                                                -r.sfa_d;
-                                                kw..., xlims=xl, title="SFA",
-                                                legend=:bottomright)
-        plot(ptdse, psfa, layout=@layout([a;b]))
+
+        fig[2,1] = gl2 = GridLayout()
+        SCIDWrapper.plot_dipole_spectrum!(gl2, r.sfa_t, δt, r.ω₀,
+                                          austrip(r.sfa_Iₚ), austrip(r.sfa_Uₚ), austrip(r.sfa_hhg_cutoff),
+                                          -vec(r.sfa_d);
+                                          kw..., limits=((xl...,), nothing),
+                                          title="SFA")
+        ax2 = first(contents(gl2[1,1]))
+        linkxaxes!(ax1, ax2)
     end
-    plot_many_runs(ps...; column_height=1000)
 end
 
 # ╔═╡ 952d668e-9d2b-4ddc-b762-4a1a601bde0b
@@ -156,23 +172,26 @@ end
 let
     kw = (ωkind=energy_kind, ωunit=freq_unit,
           window_length=gabor_window_length,
-          maxsteps=500, verbosity=0)
+          maxsteps=500)
 
-    ps = map(all_results) do r
-        ptdse = plot(SCIDWrapper.plot_time_frequency_analysis(r, r.F; kw..., dynamic_range=gabor_dynamic_range),
-                     title="TDSE")
+    plot_many_runs(column_height=1000) do i,fig
+        r = all_results[i]
+        gl1 = GridLayout(fig[1,1])
+        SCIDWrapper.plot_time_frequency_analysis!(gl1, r, r.F; kw..., dynamic_range=gabor_dynamic_range, title="TDSE")
 
-        yl = ylims(ptdse)
-        psfa = plot(SCIDWrapper.plot_time_frequency_analysis(r.sfa_t, r.sfa_d, r.F,
-                                                             austrip(r.sfa_Iₚ), austrip(r.sfa_Uₚ), austrip(r.sfa_hhg_cutoff);
-                                                             kw..., dynamic_range=gabor_dynamic_range+1.5),
-                    ylims=yl,
-                    title="SFA")
+        ax1 = first(contents(gl1[1,1]))
+        yl = SCIDWrapper.get_limits!(ax1)[2]
+        ax1.xaxis.attributes.labelvisible[] = false
+        ax1.xaxis.attributes.ticklabelsvisible[] = false
 
-        plot(ptdse, psfa,
-             layout=@layout([a;b]))
+        gl2 = GridLayout(fig[2,1])
+        SCIDWrapper.plot_time_frequency_analysis!(gl2, r.sfa_t, r.sfa_d, r.F,
+                                                  austrip(r.sfa_Iₚ), austrip(r.sfa_Uₚ), austrip(r.sfa_hhg_cutoff);
+                                                  kw..., dynamic_range=gabor_dynamic_range+1.5,
+                                                  limits=(nothing, (yl...,)),
+
+                                                  title="SFA")
     end
-    plot_many_runs(ps...; column_height=1000)
 end
 
 # ╔═╡ 5c0a2b02-1577-4145-9be0-cbaf925d2288
@@ -182,27 +201,16 @@ md"## Population decomposition"
 md"### Angular momentum decomposition"
 
 # ╔═╡ 417c71b5-7512-46cf-b30f-59a2d8901de2
-let
-    ps = map(SCIDWrapper.plot_angular_decomposition, all_results)
-    plot_many_runs(ps...; column_height=500)
+plot_many_runs() do i,fig
+    SCIDWrapper.plot_angular_decomposition!(fig, all_results[i])
 end
 
 # ╔═╡ 35813159-49b6-4072-aef0-dfa07901e89b
 md"### Eigendecomposition"
 
 # ╔═╡ cf180888-276e-4e27-ab21-8fde2d5d6372
-let
-    ℓmax = isempty(all_results) ? 0 : minimum(r -> r.inputs["ℓmax"], all_results, init=100)
-    ps = map(0:ℓmax) do ℓ
-        p = plot()
-        for (i,r) in enumerate(all_results)
-            SCIDWrapper.plot_eigen_decomposition!(p, r, predicate=(ℓ′,m′) -> ℓ′ == ℓ,
-                                                  # Epredicate = <=(0),
-                                                  label=runs[i])
-        end
-        plot(p, title=L"\ell=%$(ℓ)")
-    end
-    plot(ps..., size=(1000,200*(ℓmax+1)), layout=grid(ceil(Int, (ℓmax+1)/2),2))
+plot_many_runs() do i,fig
+    SCIDWrapper.plot_eigen_decomposition!(fig, all_results[i])
 end
 
 # ╔═╡ a81e0544-bd74-472e-a660-5e471211a7ab
@@ -213,10 +221,9 @@ end
 
 # ╔═╡ 896f9649-3da3-416d-be29-aa618d6ec1fc
 let
-    ps = map(all_results) do r
-        SCIDWrapper.plot_photon_diagram(r, draw_photons=draw_photons)
+    plot_many_runs(column_height=500) do i, fig
+        SCIDWrapper.plot_photon_diagram!(fig, all_results[i], draw_photons=draw_photons)
     end
-    plot_many_runs(ps...; column_height=500)
 end
 
 # ╔═╡ 7a8f6c45-a03e-4406-8dc2-3aac325409e5
@@ -231,28 +238,30 @@ end
 
 # ╔═╡ 200a827a-5b6d-441d-ade8-fbc65aee6c88
 let
-    ps = map(all_results) do r
-        plot(SCIDWrapper.plot_pes(r.volkov_pes,
-                                  dynamic_range=pes_dynamic_range, projection=pes_projection,
-                                  Uₚ=r.Uₚ), title="TDSE")
+    plot_many_runs(column_height=1000) do i, fig
+        r = all_results[i]
+        SCIDWrapper.plot_pes!(fig, r.volkov_pes,
+                              dynamic_range=pes_dynamic_range, projection=pes_projection,
+                              Uₚ=r.Uₚ, title="TDSE")
     end
-    plot_many_runs(ps...; column_height=1000)
 end
 
 # ╔═╡ eb8c3fb1-1ea3-4c6a-af0d-5ff167c34dac
 let
-    ps = map(all_results) do r
+    plot_many_runs(column_height=1000) do i, fig
+        r = all_results[i]
         sfa_pes = (A=r.sfa_c_direct,θ=rad2deg.(r.θ),k=r.kmag)
-        p = plot(SCIDWrapper.plot_pes(sfa_pes,
+
+        p = SCIDWrapper.plot_pes!(fig, sfa_pes,
                                   dynamic_range=pes_dynamic_range, projection=pes_projection,
-                                  Uₚ=r.Uₚ), title="SFA direct only")
+                                  Uₚ=r.sfa_Uₚ, title="SFA direct only", nolegend=true)
+        ax = first(contents(p[2,1]))
         if !isnothing(r.sfa_c_rescattered)
-            plot!(p[2], r.kmag, abs2.(r.sfa_c_rescattered), label=L"Rescattered, $\theta=0^\circ$",
-                title="SFA, direct and rescattered")
+            lines!(ax, r.kmag, vec(abs2.(r.sfa_c_rescattered)), label=L"Rescattered, $\theta=0^\circ$")
+            ax.title="SFA, direct and rescattered"
         end
-        p
+        axislegend(ax, position=:lb)
     end
-    plot_many_runs(ps...; column_height=1000)
 end
 
 # ╔═╡ 4227dd14-1134-11ef-27e8-91c16eb7a3a3

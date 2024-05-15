@@ -21,7 +21,7 @@ begin
 
     using PlutoUI
 
-    using Plots
+    using CairoMakie
     using LaTeXStrings
     using DelimitedFiles
 
@@ -244,12 +244,15 @@ Since we solved the TDSE for a linearly polarized field, only the
 
 # ╔═╡ 0947d3b4-2c76-4de4-a6cf-f91ae840c4ed
 let
-    ptdse = SCIDWrapper.plot_dipole_moment(results, title="TDSE")
+    fig = Figure(size=(900,800))
+    fig[1,1] = gl1 = GridLayout()
+    SCIDWrapper.plot_dipole_moment!(gl1, results, title="TDSE")
 
+    fig[1,2] = gl2 = GridLayout()
     Av = vector_potential(F, sfa_t)
-    psfa = SCIDWrapper.plot_dipole_moment(sfa_t, Fv, Av, -sfa_d, title="SFA")
+    SCIDWrapper.plot_dipole_moment!(gl2, sfa_t, Fv, Av, -sfa_d, title="SFA", yaxisposition=:right)
 
-    plot(ptdse, psfa, size=(900,800))
+    fig
 end
 
 # ╔═╡ 1c3b3451-7348-43ee-9f8c-5161c36f2279
@@ -271,20 +274,28 @@ end
 # ╔═╡ 98dce21a-7df0-4059-857c-2777c6e145e0
 let
     kw = (;ωkind=energy_kind, ωunit=freq_unit, window=apodizing_window)
-    ptdse = SCIDWrapper.plot_dipole_spectrum(results; kw..., title="TDSE")
 
-    xl = xlims(ptdse)
+    fig = Figure(size=(900,900))
+    fig[1,1] = gl1 = GridLayout()
+    SCIDWrapper.plot_dipole_spectrum!(gl1, results; kw..., title="TDSE",
+                                      xticklabelsvisible=false, xlabelvisible=false)
+
+    ax1 = first(contents(gl1[1,1]))
+    xl = SCIDWrapper.get_limits!(ax1)[1]
 
     ω₀ = austrip(photon_energy(F))
     δt = step(sfa_t)
 
-    psfa = SCIDWrapper.plot_dipole_spectrum(sfa_t, δt, ω₀,
-                                            austrip(sfa_Iₚ), austrip(sfa_Uₚ), austrip(sfa_hhg_cutoff),
-                                            -sfa_d;
-                                            kw..., xlims=xl, title="SFA")
+    fig[2,1] = gl2 = GridLayout()
+    SCIDWrapper.plot_dipole_spectrum!(gl2, sfa_t, δt, ω₀,
+                                      austrip(sfa_Iₚ), austrip(sfa_Uₚ), austrip(sfa_hhg_cutoff),
+                                      -sfa_d;
+                                      kw..., limits=((xl...,), nothing),
+                                      title="SFA")
+    ax2 = first(contents(gl2[1,1]))
+    linkxaxes!(ax1, ax2)
 
-    plot(ptdse, psfa, size=(900,900),
-         layout=@layout([a;b]))
+    fig
 end
 
 # ╔═╡ 2ca2bf08-51ab-40b1-a5d3-eebb7c11b1f4
@@ -296,22 +307,28 @@ end
 
 # ╔═╡ 6992276e-f690-4c4b-98e7-5e08bc08f745
 let
-
     kw = (ωkind=energy_kind, ωunit=freq_unit,
           window_length=gabor_window_length,
-          maxsteps=500, verbosity=0)
-    ptdse = plot(SCIDWrapper.plot_time_frequency_analysis(results, F; kw..., dynamic_range=gabor_dynamic_range),
-                 title="TDSE")
+          maxsteps=500)
 
-    yl = ylims(ptdse)
-    psfa = plot(SCIDWrapper.plot_time_frequency_analysis(sfa_t, sfa_d, F,
-                                                         austrip(sfa_Iₚ), austrip(sfa_Uₚ), austrip(sfa_hhg_cutoff);
-                                                         kw..., dynamic_range=gabor_dynamic_range+1.5),
-                ylims=yl,
-                title="SFA")
+    fig = Figure(size=(900,1000))
+    gl1 = GridLayout(fig[1,1])
+    SCIDWrapper.plot_time_frequency_analysis!(gl1, results, F; kw..., dynamic_range=gabor_dynamic_range, title="TDSE")
 
-    plot(ptdse, psfa, size=(900,1000),
-         layout=@layout([a;b]))
+    ax1 = first(contents(gl1[1,1]))
+    yl = SCIDWrapper.get_limits!(ax1)[2]
+    ax1.xaxis.attributes.labelvisible[] = false
+    ax1.xaxis.attributes.ticklabelsvisible[] = false
+
+    gl2 = GridLayout(fig[2,1])
+    SCIDWrapper.plot_time_frequency_analysis!(gl2, sfa_t, sfa_d, F,
+                                              austrip(sfa_Iₚ), austrip(sfa_Uₚ), austrip(sfa_hhg_cutoff);
+                                              kw..., dynamic_range=gabor_dynamic_range+1.5,
+                                              limits=(nothing, (yl...,)),
+
+                                              title="SFA")
+
+    fig
 end
 
 # ╔═╡ 021d2604-5ce5-4858-827a-06f7f72d204b
@@ -365,24 +382,26 @@ let
 end
 
 # ╔═╡ 1b8115bb-1b44-488a-b1db-a2e14e4f95af
-let
-    plot(SCIDWrapper.plot_pes(results.volkov_pes,
-                              dynamic_range=pes_dynamic_range, projection=pes_projection,
-                              Uₚ=results.Uₚ), title="TDSE")
-end
+SCIDWrapper.plot_pes(results.volkov_pes,
+                     dynamic_range=pes_dynamic_range, projection=pes_projection,
+                     Uₚ=results.Uₚ, title="TDSE")
 
 # ╔═╡ 74cc9cf1-152c-4be3-afc5-90785a1c1fb0
 let
     sfa_pes = (A=sfa_c_direct,θ=rad2deg.(θ),k=kmag)
 
-    p = plot(SCIDWrapper.plot_pes(sfa_pes,
-                                  dynamic_range=pes_dynamic_range, projection=pes_projection,
-                                  Uₚ=sfa_Uₚ), title="SFA direct only")
+    p = SCIDWrapper.plot_pes(sfa_pes,
+                             dynamic_range=pes_dynamic_range, projection=pes_projection,
+                             Uₚ=sfa_Uₚ, title="SFA direct only", nolegend=true)
+    ax = first(contents(p[2,1]))
     if !isnothing(sfa_c_rescattered)
-        plot!(p[2], kmag, abs2.(sfa_c_rescattered), label=L"Rescattered, $\theta=0^\circ$",
-            title="SFA, direct and rescattered")
+        lines!(ax, kmag, vec(abs2.(sfa_c_rescattered)), label=L"Rescattered, $\theta=0^\circ$")
+        ax.title="SFA, direct and rescattered"
     end
+    axislegend(ax, position=:lb)
+
     p
+
 end
 
 # ╔═╡ c589c676-b22f-455e-a63f-39131123d5b1
@@ -390,9 +409,6 @@ md"# Helper code"
 
 # ╔═╡ 6bf8557c-f7fd-4059-8e29-a430400577c2
 notebook_styling()
-
-# ╔═╡ 5e3d475d-54e9-4e40-af42-764a1f8759aa
-
 
 # ╔═╡ Cell order:
 # ╟─e95a3092-5273-4d97-9dc6-221f79f45bbc
@@ -445,4 +461,3 @@ notebook_styling()
 # ╟─c589c676-b22f-455e-a63f-39131123d5b1
 # ╟─c509765c-0079-11ef-10e0-29f04d6cc915
 # ╟─6bf8557c-f7fd-4059-8e29-a430400577c2
-# ╟─5e3d475d-54e9-4e40-af42-764a1f8759aa

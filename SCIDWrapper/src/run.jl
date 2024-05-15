@@ -46,13 +46,13 @@ function run_calc(sys::System, SCID_EXE::AbstractString;
         t = timeaxis(F) .+ t₀
         Fv = field_amplitude(F, t .- t₀)
         Av = vector_potential(F, t .- t₀)
-        tplot = au2fs*t
+        tplot = ustrip.(au2fs*t)
 
-        pF = plot(tplot, Fv, ylabel=L"$F(t)$ [au]")
-        pA = plot(tplot, Av, ylabel=L"$A(t)$ [au]")
-        p = plot(pF, pA, layout=@layout([a;b]), xlabel=L"$t$ [fs]")
+        fig = Figure()
+        lines!(Axis(fig[1,1], xticklabelsvisible=false, ylabel=L"$F(t)$ [au]"), tplot, Fv)
+        lines!(Axis(fig[2,1], xlabel=L"$t$ [fs]", ylabel=L"$A(t)$ [au]"), tplot, Av)
 
-        @info "Proposed driving field" p
+        @info "Proposed driving field" fig
     end
 
     ENV["OMP_STACKSIZE"] = omp_stacksize
@@ -141,22 +141,27 @@ function run_calc(sys::System, SCID_EXE::AbstractString;
         F = sys.F
         t = data.t
         Av = vector_potential(F, t .- t₀)
-        tplot = au2fs*t
+        tplot = ustrip.(au2fs*t)
 
         ΔA = abs.(data.vp_mag-Av)
 
-        pA = plot(tplot, [data.vp_mag Av],
-                  label=[L"$A_{\mathrm{calc}}(t)$" L"$A_{\mathrm{prop}}(t)$"],
-                  ylabel=L"$A(t)$ [au]")
-        pΔA = plot(tplot, nan_map.(ΔA), ylabel=L"$\Delta A(t)$ [au]",
-                   yscale=:log10, ylim=(1e-20, 10maximum(ΔA)))
-        p = plot(pA, pΔA, layout=@layout([a;b]), xlabel=L"$t$ [fs]")
-        @info "Actual vector potential used" p
+        fig = Figure()
+        ax1 = Axis(fig[1,1], xticklabelsvisible=false, ylabel=L"$A(t)$ [au]")
+        lines!(ax1, tplot, data.vp_mag, label=L"$A_{\mathrm{calc}}(t)$")
+        lines!(ax1, tplot, Av, label=L"$A_{\mathrm{prop}}(t)$")
+        fig[1,2] = Legend(fig, ax1)
+        ax2 = Axis(fig[2,1], xlabel=L"$t$ [fs]", ylabel=L"$\Delta A(t)$ [au]",
+            yscale=log10, limits=(nothing,(min(1e-20,0.1minimum(findall(>(0), ΔA))), 10maximum(ΔA))))
+        lines!(ax2, tplot, ΔA)
+        @info "Actual vector potential used" fig
 
-        p = plot(tplot, [nan_map.(abs.(1.0 .- real(data.norm))) nan_map.(abs.(imag(data.norm)))],
-            label=[L"|1 - \Re\{N\}|" L"|\Im\{N\}|"], xlabel=L"$t$ [fs]",
-            yscale=:log10, ylim=(1e-14, 10))
-        @info "Lost norm" p
+        fig = Figure()
+        ax = Axis(fig[1,1], xlabel=L"$t$ [fs]",
+            yscale=log10, limits=(nothing, (1e-14, 10)))
+        lines!(ax, tplot, nan_map.(abs.(1.0 .- real(data.norm))), label=L"|1 - \Re\{N\}|", )
+        lines!(ax, tplot, nan_map.(abs.(imag(data.norm))), label=L"|\Im\{N\}|")
+        fig[1,2] = Legend(fig, ax1)
+        @info "Lost norm" fig
     end
 
     run_dir

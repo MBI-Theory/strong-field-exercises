@@ -17,7 +17,7 @@ using CSV
 using Dates
 using ProgressLogging
 
-using Plots
+using Makie
 using LaTeXStrings
 
 include("potentials.jl")
@@ -31,6 +31,14 @@ end
 
 # Base.hash(sys::System, h::UInt) = hash(sys.F, hash(sys.δt, hash(sys.potential, h)))
 Base.hash(sys::System, h::UInt) = hash(sys.δt, hash(sys.potential, h))
+
+function get_limits!(ax)
+    reset_limits!(ax)
+    box = ax.finallimits[]
+    x₀,y₀ = box.origin
+    wx,wy = box.widths
+    x₀ .+ [0, wx], y₀ .+ [0, wy]
+end
 
 include("scid_input.jl")
 include("scid_output.jl")
