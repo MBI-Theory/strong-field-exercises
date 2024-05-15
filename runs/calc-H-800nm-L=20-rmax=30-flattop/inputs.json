@@ -15,7 +15,7 @@
     "auto_decrease_timestep": true,
     "sfa_ndt": 350,
     "sfa_memory": 0.65,
-    "sfa_rescattered": true,
+    "sfa_rescattered": false,
     "volkov_tsurff": true,
     "volkov_isurff": true,
     "coulomb_isurff": false,
