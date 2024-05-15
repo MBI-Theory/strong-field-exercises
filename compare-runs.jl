@@ -155,7 +155,8 @@ end
 # ╔═╡ de0abe8c-e1d0-427a-a446-9ed181e6890d
 let
     kw = (ωkind=energy_kind, ωunit=freq_unit,
-          window_length=gabor_window_length)
+          window_length=gabor_window_length,
+          maxsteps=500, verbosity=0)
 
     ps = map(all_results) do r
         ptdse = plot(SCIDWrapper.plot_time_frequency_analysis(r, r.F; kw..., dynamic_range=gabor_dynamic_range),

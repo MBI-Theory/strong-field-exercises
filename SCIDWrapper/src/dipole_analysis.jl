@@ -101,12 +101,13 @@ function plot_dipole_spectrum(results; kwargs...)
                          kwargs...)
 end
 
-function wind_transf(t, x, w)
+function wind_transf(t, x, w; maxsteps=500, verbosity=0)
     f = rfftfreq(length(t),1.0/(t[2]-t[1]))
     ecat(a,b) = cat(a,b,dims=ndims(x)+1)
     nt = length(t)
-    s = max(1, floor(Int, nt/1000))
+    s = max(1, floor(Int, nt/maxsteps))
     tsel = 1:s:nt
+    verbosity > 0 && @info "Time" nt s tsel
     Cₓ = zeros(length(t), length(tsel))
     @withprogress name="Windowed FFT" begin
         for (ii,i) in enumerate(tsel)
@@ -117,18 +118,18 @@ function wind_transf(t, x, w)
     Wₓ = rfft(Cₓ, 1)
     t[tsel], f,Wₓ
 end
-gabor(t, x, σ) = wind_transf(t, x, fftshift(exp.(-(t .- mean(t)).^2/2σ^2)))
+gabor(t, x, σ; kwargs...) = wind_transf(t, x, fftshift(exp.(-(t .- mean(t)).^2/2σ^2)); kwargs...)
 
 plot_time_frequency_analysis(::Nothing, args...; kwargs...) = nothing
 function plot_time_frequency_analysis(t, v, F, Iₚ, Uₚ, cutoff;
-                                      ωkind=:total, ωunit=u"eV", window_length=0.05, dynamic_range=2)
+                                      ωkind=:total, ωunit=u"eV", window_length=0.05, dynamic_range=2, kwargs...)
     T = austrip(period(F))
     ω₀ = photon_energy(F)
 
     w = hanning(length(t))
 
     v = real(v)
-    tt,f,W = gabor(t, w.*v, window_length*T)
+    tt,f,W = gabor(t, w.*v, window_length*T; kwargs...)
 
     au2fs = auconvert(u"fs", 1)
     tplot = au2fs*tt

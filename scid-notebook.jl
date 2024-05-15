@@ -298,7 +298,8 @@ end
 let
 
     kw = (ωkind=energy_kind, ωunit=freq_unit,
-          window_length=gabor_window_length)
+          window_length=gabor_window_length,
+          maxsteps=500, verbosity=0)
     ptdse = plot(SCIDWrapper.plot_time_frequency_analysis(results, F; kw..., dynamic_range=gabor_dynamic_range),
                  title="TDSE")
 
