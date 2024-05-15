@@ -278,7 +278,7 @@ end
 
 # * Electric Fields
 
-function get_electric_field(inputs)
+function get_electric_field(inputs; gauss_kind=:trunc_gauss, ramp=1.0)
     Kt = keytype(inputs)
     getk(k) = inputs[Kt(k)]
 
@@ -298,10 +298,10 @@ function get_electric_field(inputs)
         params[:τ] = τ
         params[:σoff] = 3.0
         params[:σmax] = 4.0
-        params[:env] = :trunc_gauss
+        params[:env] = gauss_kind
     elseif Symbol(getk(:envelope)) == :tophat
         params[:flat] = float(getk(:cycles))
-        params[:ramp] = 1.0
+        params[:ramp] = ramp
         params[:env] = :tophat
         params[:ramp_kind] = :sin²
     else
