@@ -235,7 +235,7 @@ select_previous_runs(;kwargs...) = MultiSelect(list_previous_runs(;kwargs...))
 function load_inputs(run_dir; verbosity=1)
     input_file = joinpath(run_dir, "inputs.json")
     !isfile(input_file) && return Dict()
-    verbosity > 0 && @info "Loading inputs form $(input_file)"
+    verbosity > 0 && @info "Loading inputs from $(input_file)"
     open(JSON.parse, input_file)
 end
 
