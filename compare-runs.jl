@@ -45,8 +45,8 @@ begin
 end
 
 # ╔═╡ 2c5978fe-9f86-4fab-98b6-4c77b02ab4ed
-@bind runs select_previous_runs(extra_files=["output.detail", "run.inp", "run.out", "volkov.pes",
-                                             "sfa_hhg_direct.txt", "sfa_c_direct.txt"])
+@bind runs confirm(select_previous_runs(extra_files=["output.detail", "run.inp", "run.out", "volkov.pes",
+                                                     "sfa_hhg_direct.txt", "sfa_c_direct.txt"]))
 
 # ╔═╡ 858cee8f-78fb-44a2-aeb5-49c02f4374aa
 
