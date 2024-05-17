@@ -54,7 +54,7 @@ Iₚ = 0.5u"hartree"
 γ = .√(austrip(Iₚ) ./ (2Uₚ))
 
 # ╔═╡ bb2a0db9-ccf2-4bc8-9ff3-e2a0e9d4edcb
-w_DC = exp.(-2*(2austrip(Iₚ)^(3/2)) ./ (3F))
+w_DC = exp.(-2*((2austrip(Iₚ))^(3/2)) ./ (3F))
 
 # ╔═╡ 7134ece8-f19a-4f57-9d9c-15c08cb9a3cc
 w_MPI = (sqrt(exp(1)) ./ (2γ)) .^ (2Iₚ/ω)
@@ -78,8 +78,6 @@ let
     It = (Iaut*ElectricFields.Iau/u"TW/cm^2") .|> NoUnits
     Ft = .√(Iaut)
 
-    @info "Ticks" It Ft
-
     for (j,(x, xscale, xlabel, xt)) in enumerate(((ustrip.(I), log10, L"$I$ [TW/cm$^2$]", It),
                                                   (1 ./ F, identity, L"$1 / F$ [au]", 1 ./ Ft)))
         ax = Axis(fig[1,j], xscale=xscale, yscale=log10, xlabel=xlabel,
@@ -91,7 +89,9 @@ let
         lines!(x, w_MPI * w_ppt[1]/w_MPI[1], label=L"MPI: $|\gamma^{-2I_p/\omega}|^2$", linestyle=:dash)
         lines!(x, w_ppt, label="PPT", color="black")
 
-        j == 2 && axislegend(ax, position=:lb)
+        j == 2 && axislegend(ax, position=:rt)
+
+        ylims!(ax, (1e-30, nothing))
 
         xl = first(get_limits!(ax))
 
@@ -105,18 +105,6 @@ let
 
     save("../../../figures/sfi.pdf", fig)
     fig
-end
-
-# ╔═╡ 405ca664-288d-4efd-a57b-856d90314f63
-let
-        x = range(-1,stop=1,length=101)
-
-        y = 2asinh.(x)
-
-        fig = Figure()
-        ax = Axis(fig[1,1], yscale=log10)
-        lines!(x, abs.(sinh.(x) .- asin.(x)) .+ 1e-20)
-        fig
 end
 
 # ╔═╡ Cell order:
@@ -133,5 +121,4 @@ end
 # ╠═7134ece8-f19a-4f57-9d9c-15c08cb9a3cc
 # ╠═2a9cb070-d091-4e31-8742-aeb54cfce6fe
 # ╠═7c148e18-b317-424d-80f1-2a6d603065f4
-# ╠═90d53ff4-bab2-4738-9f45-4b87819e13d4
-# ╠═405ca664-288d-4efd-a57b-856d90314f63
+# ╟─90d53ff4-bab2-4738-9f45-4b87819e13d4
