@@ -21,7 +21,7 @@ begin
 
     using PlutoUI
 
-    using Plots
+    using CairoMakie
     using LaTeXStrings
     using DelimitedFiles
 
@@ -131,7 +131,7 @@ end
 
 # ╔═╡ 9b928f14-b785-436e-8841-8b7bda8092d6
 results = SCIDWrapper.load_scan(Fs, scan_dir) do F₀,data
-    ppt(args...) = StrongFieldApproximation.IonizationRates.ionization_yield(args...)
+    iy(args...; kwargs...) = StrongFieldApproximation.IonizationRates.ionization_yield(args...; kwargs...)
     sum_norms(v) = sum(real(e) for e in v if real(e) > 0)
 
     bn = sum_norms(data.final_population[!,"Bound population"])
@@ -139,27 +139,33 @@ results = SCIDWrapper.load_scan(Fs, scan_dir) do F₀,data
      bound_norm=bn,
      ionization_yield = 1 - bn,
      gst_norm = max(0, real(data.large_amplitudes[1,"Wgt"])),
-     # ppt_ionization_yield = ppt(get_field(F₀, inputs.λ*u"nm", inputs.cycles), -real(data.E₀), 0, 0, inputs.charge)
+     keldysh_ionization_yield = iy(get_field(F₀, inputs.λ*u"nm", inputs.cycles), -real(data.E₀), model=:keldysh, η=4.32),
+     ppt_ionization_yield = iy(get_field(F₀, inputs.λ*u"nm", inputs.cycles), -real(data.E₀), 0, 0, inputs.charge)
     )
+
 end
 
 # ╔═╡ 169cacd0-d9c6-46ac-be84-2ff0ac1f48dc
 let
     x,xlabel,xaxis = if field_strength_axis == :invF
-        1 ./ Fs, L"$1/F$ [au]", :identity
+        1 ./ Fs, L"$1/F$ [au]", identity
     elseif field_strength_axis == :Fsquared
-        Fs .^2, L"$F^2$ [au]", :log10
+        Fs .^2, L"$F^2$ [au]", log10
     else
         throw(ArgumentError("Unknown axis $(field_strength_axis)"))
     end
-    p = plot(x, results.gst_norm, markershape=:auto, label="Ground state")
-    plot!(p, x, results.bound_norm .- results.gst_norm, markershape=:auto, label="Excited states")
-    plot!(p, x, results.ionization_yield, markershape=:auto, label="Ionization yield")
-    # plot!(p, x, results.ppt_ionization_yield, markershape=:auto, label="PPT")
-    plot(p, xlabel=xlabel, ylabel="Yield",
-         xaxis=xaxis,
-         yaxis=(:log10, (1e-14,:auto)),
-         legend=:outerbottom, size=(900,700))
+    fig = Figure(size=(600,450))
+    ax = Axis(fig[1,1], xscale=xaxis, yscale=log10,
+              xlabel=xlabel, ylabel="Yield")
+    scatterlines!(ax, x, results.gst_norm, marker=:circle, label="Ground state")
+    scatterlines!(ax, x, results.bound_norm .- results.gst_norm, marker=:diamond, label="Excited states")
+    scatterlines!(ax, x, results.ionization_yield, marker=:rect, label="Ionization yield")
+    scatterlines!(ax, x, results.ppt_ionization_yield, marker=:rect, label="PPT")
+    scatterlines!(ax, x, results.keldysh_ionization_yield, marker=:circle, label="Keldysh")
+
+    Legend(fig[1,2], ax)
+
+    fig
 end
 
 # ╔═╡ f2defed4-09d4-49d2-81a8-4c4e6b0d75f2

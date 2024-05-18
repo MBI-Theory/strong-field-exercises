@@ -1648,7 +1648,7 @@ version = "0.3.4"
 
 [[deps.StrongFieldApproximation]]
 deps = ["ElectricFields", "FastGaussQuadrature", "HCubature", "IntervalSets", "LinearAlgebra", "ProgressLogging", "SpecialFunctions", "StaticArrays", "Unitful", "UnitfulAtomic"]
-git-tree-sha1 = "bd56b3dd865cb3cfe5667f082ce4383f5a8bdca2"
+git-tree-sha1 = "6afeb3525996138bc7c93aecb4cc21efae0d27a8"
 repo-rev = "master"
 repo-url = "https://github.com/jagot/StrongFieldApproximation.jl.git"
 uuid = "8040a08e-eda0-452b-8711-9fe2c017c9f1"
